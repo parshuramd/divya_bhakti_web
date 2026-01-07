@@ -100,6 +100,8 @@ export const metadata: Metadata = {
   category: 'ecommerce',
 };
 
+import { FloatingActions } from '@/components/common/floating-actions';
+
 export default async function RootLayout({
   children,
 }: {
@@ -130,6 +132,7 @@ export default async function RootLayout({
           >
             <NextIntlClientProvider messages={messages}>
               {children}
+              <FloatingActions />
               <Toaster />
             </NextIntlClientProvider>
           </ThemeProvider>

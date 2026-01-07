@@ -85,6 +85,24 @@ async function getRelatedProducts(categoryId: string, currentProductId: string) 
   return products.map(serializeProduct);
 }
 
+import { Metadata } from 'next';
+
+export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
+  const product = await getProduct(params.slug);
+  if (!product) return { title: 'Product Not Found' };
+
+  return {
+    title: product.metaTitle || `${product.name} | Divya Bhakti Store`,
+    description: product.metaDescription || product.shortDescription || product.description?.slice(0, 160),
+    openGraph: {
+      title: product.name,
+      description: product.shortDescription || product.description?.slice(0, 160),
+      images: product.images[0]?.url ? [{ url: product.images[0].url }] : [],
+      type: 'website',
+    },
+  };
+}
+
 export default async function ProductPage({ params }: ProductPageProps) {
   const t = await getTranslations();
   const product = await getProduct(params.slug);
@@ -98,8 +116,32 @@ export default async function ProductPage({ params }: ProductPageProps) {
     ? calculateDiscount(product.price, product.compareAtPrice) 
     : 0;
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    image: product.images[0]?.url,
+    description: product.shortDescription || product.description,
+    sku: product.sku,
+    brand: {
+      '@type': 'Brand',
+      name: 'Divya Bhakti Store',
+    },
+    offers: {
+      '@type': 'Offer',
+      url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://divyabhaktistore.com'}/product/${product.slug}`,
+      priceCurrency: 'INR',
+      price: product.price,
+      availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+    },
+  };
+
   return (
     <div className="bg-white min-h-screen pb-20">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Breadcrumbs */}
       <div className="bg-gray-50 border-b border-gray-100">
         <div className="container mx-auto px-4 py-4">
