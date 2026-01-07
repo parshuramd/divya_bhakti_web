@@ -1,0 +1,245 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 30 20% 99%;
+    --foreground: 20 14% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 20 14% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 14% 10%;
+    --primary: 24 95% 53%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 30 15% 96%;
+    --secondary-foreground: 20 14% 10%;
+    --muted: 30 15% 96%;
+    --muted-foreground: 20 10% 40%;
+    --accent: 43 96% 56%;
+    --accent-foreground: 20 14% 10%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 30 15% 90%;
+    --input: 30 15% 90%;
+    --ring: 24 95% 53%;
+    --radius: 0.5rem;
+    
+    /* Devotional Theme Colors */
+    --saffron: 24 95% 53%;
+    --maroon: 343 65% 40%;
+    --gold: 43 96% 56%;
+    --cream: 30 20% 98%;
+  }
+
+  .dark {
+    --background: 20 14% 6%;
+    --foreground: 30 20% 98%;
+    --card: 20 14% 10%;
+    --card-foreground: 30 20% 98%;
+    --popover: 20 14% 10%;
+    --popover-foreground: 30 20% 98%;
+    --primary: 24 95% 53%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 20 14% 15%;
+    --secondary-foreground: 30 20% 98%;
+    --muted: 20 14% 15%;
+    --muted-foreground: 30 10% 60%;
+    --accent: 43 96% 56%;
+    --accent-foreground: 20 14% 10%;
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 20 14% 20%;
+    --input: 20 14% 20%;
+    --ring: 24 95% 53%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display tracking-tight;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  /* Devotional pattern backgrounds */
+  .bg-pattern-mandala {
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23f97316' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  
+  /* Gradient backgrounds */
+  .bg-gradient-saffron {
+    @apply bg-gradient-to-r from-saffron-500 to-saffron-600;
+  }
+  
+  .bg-gradient-devotional {
+    background: linear-gradient(135deg, #fff7ed 0%, #ffffff 50%, #fef3c7 100%);
+  }
+  
+  .bg-gradient-hero {
+    background: linear-gradient(135deg, #fff7ed 0%, #fefce8 50%, #ffedd5 100%);
+  }
+  
+  /* Text gradients */
+  .text-gradient-saffron {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-saffron-600 to-saffron-500;
+  }
+  
+  .text-gradient-gold {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-gold-600 to-gold-500;
+  }
+  
+  /* Card styles */
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+  }
+  
+  .card-devotional {
+    @apply bg-white rounded-xl shadow-md border border-saffron-100/50 overflow-hidden;
+  }
+  
+  /* Button styles */
+  .btn-saffron {
+    @apply bg-gradient-to-r from-saffron-500 to-saffron-600 text-white 
+           hover:from-saffron-600 hover:to-saffron-700 
+           transition-all duration-300 shadow-md hover:shadow-lg active:scale-95;
+  }
+  
+  .btn-gold {
+    @apply bg-gradient-to-r from-gold-500 to-gold-600 text-white 
+           hover:from-gold-600 hover:to-gold-700 
+           transition-all duration-300 shadow-md hover:shadow-lg active:scale-95;
+  }
+  
+  /* Badge styles */
+  .badge-saffron {
+    @apply bg-saffron-100 text-saffron-800 text-xs font-medium px-2 py-0.5 rounded-full border border-saffron-200;
+  }
+  
+  .badge-gold {
+    @apply bg-gold-100 text-gold-800 text-xs font-medium px-2 py-0.5 rounded-full border border-gold-200;
+  }
+  
+  /* Divider with Om symbol */
+  .divider-om {
+    @apply flex items-center gap-4 my-8 opacity-80;
+  }
+  
+  .divider-om::before,
+  .divider-om::after {
+    content: '';
+    @apply flex-1 h-px bg-gradient-to-r from-transparent via-saffron-300 to-transparent;
+  }
+  
+  /* Loading shimmer */
+  .shimmer {
+    @apply relative overflow-hidden bg-gray-100;
+  }
+  
+  .shimmer::after {
+    content: '';
+    @apply absolute inset-0 -translate-x-full;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.6),
+      transparent
+    );
+    animation: shimmer 2s infinite;
+  }
+  
+  /* Product card styles */
+  .product-card {
+    @apply card-devotional card-hover;
+  }
+  
+  .product-card-image {
+    @apply relative aspect-[4/5] overflow-hidden bg-saffron-50;
+  }
+  
+  .product-card-badge {
+    @apply absolute top-3 left-3 z-10 flex flex-col gap-1;
+  }
+  
+  .product-card-actions {
+    @apply absolute top-3 right-3 z-10 flex flex-col gap-2 opacity-0 
+           transition-all duration-300 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0;
+  }
+  
+  /* Hero section */
+  .hero-section {
+    @apply relative overflow-hidden bg-gradient-hero;
+  }
+  
+  .hero-pattern {
+    @apply absolute inset-0 bg-pattern-mandala opacity-40;
+  }
+  
+  /* Section styles */
+  .section-title {
+    @apply text-3xl md:text-4xl font-display font-bold text-foreground relative inline-block;
+  }
+  
+  .section-subtitle {
+    @apply text-muted-foreground max-w-2xl text-lg mt-2;
+  }
+  
+  /* Category card - Note: Add 'group' class directly to the element */
+  .category-card {
+    @apply relative overflow-hidden rounded-2xl aspect-square cursor-pointer shadow-md hover:shadow-xl transition-all duration-500;
+  }
+  
+  .category-card-overlay {
+    @apply absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent
+           transition-all duration-500 opacity-80 group-hover:opacity-90;
+  }
+  
+  .category-card-content {
+    @apply absolute bottom-0 left-0 right-0 p-6 text-white
+           transform transition-transform duration-500 translate-y-2 group-hover:translate-y-0;
+  }
+  
+  /* Price styles */
+  .price-current {
+    @apply text-lg font-bold text-saffron-700;
+  }
+  
+  .price-original {
+    @apply text-sm text-muted-foreground line-through decoration-destructive/50;
+  }
+  
+  .price-discount {
+    @apply text-xs font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .text-shadow-sm {
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  }
+  
+  .text-shadow {
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .glass-effect {
+    @apply bg-white/80 backdrop-blur-md border border-white/20;
+  }
+}
