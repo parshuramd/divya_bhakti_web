@@ -72,8 +72,8 @@ export function DealOfTheDay() {
 
         <div className="flex-1 relative h-[300px] w-full md:w-auto">
           <Image
-            src="https://images.unsplash.com/photo-1567591414240-e9c1e001a2b7?w=800"
-            alt="Deal Product"
+            src="https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800"
+            alt="Premium Brass Ganesha Idol"
             fill
             className="object-contain"
           />

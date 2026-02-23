@@ -67,7 +67,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json(product);
   } catch (error) {
-    console.log('[PRODUCTS_POST]', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[PRODUCTS_POST]', error);
+    }
     return new NextResponse("Internal error", { status: 500 });
   }
 }

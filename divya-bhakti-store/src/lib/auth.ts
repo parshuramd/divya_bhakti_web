@@ -121,9 +121,9 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.email = user.email;
-        token.name = user.name;
-        token.role = user.role;
-        token.image = user.image;
+        token.name = user.name ?? '';
+        token.role = (user as any).role;
+        token.image = user.image ?? '';
       }
 
       if (trigger === 'update' && session) {
@@ -136,17 +136,19 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (token) {
         session.user.id = token.id as string;
-        session.user.email = token.email as string;
-        session.user.name = token.name as string;
+        session.user.email = (token.email as string) || '';
+        session.user.name = (token.name as string) || '';
         session.user.role = token.role as string;
-        session.user.image = token.image as string;
+        session.user.image = (token.image as string) || '';
       }
       return session;
     },
   },
   events: {
     async signIn({ user }) {
-      console.log(`User signed in: ${user.email}`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`User signed in: ${user.email}`);
+      }
     },
   },
 };

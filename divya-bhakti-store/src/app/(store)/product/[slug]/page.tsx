@@ -3,16 +3,16 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
-import { 
-  Star, 
-  Truck, 
-  Shield, 
-  RefreshCw, 
-  Heart, 
-  Share2, 
-  ChevronRight, 
-  Minus, 
-  Plus, 
+import {
+  Star,
+  Truck,
+  Shield,
+  RefreshCw,
+  Heart,
+  Share2,
+  ChevronRight,
+  Minus,
+  Plus,
   ShoppingCart,
   Check
 } from 'lucide-react';
@@ -29,6 +29,7 @@ import {
 import { ProductCard } from '@/components/product/product-card';
 import { AddToCartButton } from '@/components/product/add-to-cart-button';
 import { ProductGallery } from '@/components/product/product-gallery';
+import { ReviewSection } from '@/components/product/review-section';
 import prisma from '@/lib/prisma';
 import { formatPrice, calculateDiscount } from '@/lib/utils';
 
@@ -58,11 +59,26 @@ async function getProduct(slug: string) {
       },
       category: true,
       variants: true,
+      reviews: {
+        where: { isApproved: true },
+        select: { rating: true },
+      },
     },
   });
 
   if (!product) return null;
-  return serializeProduct(product);
+
+  const totalReviews = product.reviews.length;
+  const averageRating = totalReviews > 0
+    ? product.reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
+    : 0;
+
+  const serialized = serializeProduct(product);
+  return {
+    ...serialized,
+    reviewCount: totalReviews,
+    averageRating: Math.round(averageRating * 10) / 10,
+  };
 }
 
 async function getRelatedProducts(categoryId: string, currentProductId: string) {
@@ -112,11 +128,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
   }
 
   const relatedProducts = await getRelatedProducts(product.categoryId, product.id);
-  const discount = product.compareAtPrice 
-    ? calculateDiscount(product.price, product.compareAtPrice) 
+  const discount = product.compareAtPrice
+    ? calculateDiscount(product.price, product.compareAtPrice)
     : 0;
 
-  const jsonLd = {
+  const jsonLd: Record<string, any> = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: product.name,
@@ -135,6 +151,16 @@ export default async function ProductPage({ params }: ProductPageProps) {
       availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
     },
   };
+
+  if (product.reviewCount > 0) {
+    jsonLd.aggregateRating = {
+      '@type': 'AggregateRating',
+      ratingValue: product.averageRating,
+      reviewCount: product.reviewCount,
+      bestRating: 5,
+      worstRating: 1,
+    };
+  }
 
   return (
     <div className="bg-white min-h-screen pb-20">
@@ -196,14 +222,26 @@ export default async function ProductPage({ params }: ProductPageProps) {
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1">
                   {[1, 2, 3, 4, 5].map((i) => (
-                    <Star key={i} className="h-4 w-4 fill-gold-400 text-gold-400" />
+                    <Star key={i} className={`h-4 w-4 ${i <= Math.round(product.averageRating) ? 'fill-gold-400 text-gold-400' : 'text-gray-300'}`} />
                   ))}
-                  <span className="text-sm font-medium ml-2 text-gray-600">(4.8)</span>
+                  <span className="text-sm font-medium ml-2 text-gray-600">
+                    ({product.averageRating || 0}) · {product.reviewCount || 0} {product.reviewCount === 1 ? 'review' : 'reviews'}
+                  </span>
                 </div>
                 <Separator orientation="vertical" className="h-4" />
-                <span className="text-sm text-green-600 font-medium flex items-center gap-1">
-                  <Check className="h-4 w-4" /> In Stock
-                </span>
+                {product.stock <= 0 ? (
+                  <span className="text-sm text-red-600 font-medium flex items-center gap-1">
+                    Out of Stock
+                  </span>
+                ) : product.stock <= 5 ? (
+                  <span className="text-sm text-orange-600 font-medium flex items-center gap-1">
+                    <Check className="h-4 w-4" /> Only {product.stock} left
+                  </span>
+                ) : (
+                  <span className="text-sm text-green-600 font-medium flex items-center gap-1">
+                    <Check className="h-4 w-4" /> In Stock
+                  </span>
+                )}
               </div>
 
               <div className="flex items-baseline gap-3 pt-2">
@@ -231,7 +269,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             {/* Actions */}
             <div className="space-y-6">
               <AddToCartButton product={product} />
-              
+
               {/* Trust Badges */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
@@ -240,7 +278,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   </div>
                   <div>
                     <p className="font-semibold text-sm">Free Delivery</p>
-                    <p className="text-xs text-muted-foreground">Orders > ₹499</p>
+                    <p className="text-xs text-muted-foreground">Orders above ₹499</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
@@ -299,7 +337,37 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
+
+            {/* Variant Selector */}
+            {product.variants && product.variants.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="font-semibold text-gray-900">Available Options</h3>
+                <div className="flex flex-wrap gap-2">
+                  {product.variants.map((variant: any) => (
+                    <div
+                      key={variant.id}
+                      className="px-4 py-2 border border-gray-200 rounded-lg text-sm hover:border-saffron-400 hover:bg-saffron-50 cursor-pointer transition-colors"
+                    >
+                      <span className="font-medium">{variant.name}: {variant.value}</span>
+                      {variant.price && Number(variant.price) !== product.price && (
+                        <span className="text-saffron-600 ml-2">
+                          {formatPrice(Number(variant.price))}
+                        </span>
+                      )}
+                      {variant.stock <= 0 && (
+                        <span className="text-red-500 text-xs ml-1">(Out of stock)</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
+        </div>
+
+        {/* Customer Reviews */}
+        <div className="mt-24">
+          <ReviewSection productId={product.id} />
         </div>
 
         {/* Related Products */}

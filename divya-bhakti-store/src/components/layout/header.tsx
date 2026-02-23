@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import Image from 'next/image';
+import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import {
@@ -18,6 +19,7 @@ import {
   MapPin,
   Settings,
   Phone,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,12 +56,99 @@ const categories = [
 export function Header() {
   const t = useTranslations();
   const pathname = usePathname();
+  const router = useRouter();
   const { data: session } = useSession();
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const mobileSearchRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<NodeJS.Timeout>();
   const itemCount = useCartStore((state) => state.getItemCount());
   const openCart = useCartStore((state) => state.openCart);
+
+  const handleSearch = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (searchQuery.trim()) {
+      setShowSuggestions(false);
+      setSuggestions([]);
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery('');
+    }
+  };
+
+  const fetchSuggestions = useCallback(async (query: string) => {
+    if (query.length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    setIsSearching(true);
+    try {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSuggestions(data.products || []);
+        setShowSuggestions(true);
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
+  const handleSearchInput = (value: string) => {
+    setSearchQuery(value);
+    setSelectedIndex(-1);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchSuggestions(value), 300);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!showSuggestions || suggestions.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : 0));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : suggestions.length - 1));
+    } else if (e.key === 'Enter' && selectedIndex >= 0) {
+      e.preventDefault();
+      const selected = suggestions[selectedIndex];
+      setShowSuggestions(false);
+      setSuggestions([]);
+      setSearchQuery('');
+      router.push(`/product/${selected.slug}`);
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+    }
+  };
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        searchRef.current && !searchRef.current.contains(e.target as Node) &&
+        mobileSearchRef.current && !mobileSearchRef.current.contains(e.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Close suggestions on route change
+  useEffect(() => {
+    setShowSuggestions(false);
+    setSuggestions([]);
+    setSearchQuery('');
+  }, [pathname]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -68,6 +157,52 @@ export function Header() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const SuggestionDropdown = () => {
+    if (!showSuggestions || suggestions.length === 0) return null;
+    return (
+      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden max-h-[400px] overflow-y-auto">
+        {suggestions.map((product, index) => (
+          <Link
+            key={product.id}
+            href={`/product/${product.slug}`}
+            className={cn(
+              'flex items-center gap-3 px-4 py-3 hover:bg-saffron-50 transition-colors border-b border-gray-50 last:border-0',
+              selectedIndex === index && 'bg-saffron-50'
+            )}
+            onClick={() => {
+              setShowSuggestions(false);
+              setSuggestions([]);
+              setSearchQuery('');
+            }}
+          >
+            {product.images?.[0]?.url ? (
+              <div className="relative h-10 w-10 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
+                <Image src={product.images[0].url} alt={product.name} fill className="object-cover" sizes="40px" />
+              </div>
+            ) : (
+              <div className="h-10 w-10 rounded-md bg-gray-100 flex-shrink-0 flex items-center justify-center text-gray-400 text-xs">
+                No img
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
+              <p className="text-xs text-gray-500">{product.category?.name}</p>
+            </div>
+            <span className="text-sm font-bold text-saffron-600 flex-shrink-0">
+              ₹{product.price}
+            </span>
+          </Link>
+        ))}
+        <button
+          className="w-full text-center text-sm py-2.5 text-saffron-600 hover:bg-saffron-50 font-medium border-t border-gray-100"
+          onClick={() => handleSearch()}
+        >
+          View all results for &quot;{searchQuery}&quot;
+        </button>
+      </div>
+    );
+  };
 
   return (
     <>
@@ -84,7 +219,7 @@ export function Header() {
             </span>
           </div>
           <div className="flex items-center gap-4">
-            <a href="tel:+919876543210" className="flex items-center gap-1 hover:text-saffron-400 transition-colors">
+            <a href={`tel:${process.env.NEXT_PUBLIC_SUPPORT_PHONE || '+919876543210'}`} className="flex items-center gap-1 hover:text-saffron-400 transition-colors">
               <Phone className="h-3 w-3" />
               Support
             </a>
@@ -149,20 +284,35 @@ export function Header() {
             </div>
 
             {/* Search Bar - Amazon Style Central & Large */}
-            <div className="hidden md:flex flex-1 max-w-2xl">
-              <div className="flex w-full group relative">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                  <Search className="h-5 w-5 text-gray-400 group-focus-within:text-saffron-500 transition-colors" />
+            <div className="hidden md:flex flex-1 max-w-2xl relative" ref={searchRef}>
+              <form onSubmit={handleSearch} className="flex w-full group relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none z-10">
+                  {isSearching ? (
+                    <Loader2 className="h-5 w-5 text-saffron-500 animate-spin" />
+                  ) : (
+                    <Search className="h-5 w-5 text-gray-400 group-focus-within:text-saffron-500 transition-colors" />
+                  )}
                 </div>
                 <input
-                  type="search"
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => handleSearchInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
                   placeholder="Search for idols, incense, malas..."
                   className="w-full pl-10 pr-4 py-2.5 rounded-l-lg border-2 border-r-0 border-gray-200 focus:border-saffron-500 focus:ring-0 outline-none transition-all"
+                  aria-label="Search products"
+                  autoComplete="off"
                 />
-                <Button className="rounded-l-none rounded-r-lg bg-saffron-500 hover:bg-saffron-600 px-6 font-bold border-2 border-saffron-500">
+                <button
+                  type="submit"
+                  className="inline-flex items-center justify-center rounded-l-none rounded-r-lg bg-saffron-500 hover:bg-saffron-600 px-6 font-bold border-2 border-saffron-500 text-white transition-colors"
+                  aria-label="Search"
+                >
                   <Search className="h-5 w-5" />
-                </Button>
-              </div>
+                </button>
+              </form>
+              <SuggestionDropdown />
             </div>
 
             {/* Actions */}
@@ -226,25 +376,45 @@ export function Header() {
           </div>
 
           {/* Mobile Search Bar - Visible only on mobile */}
-          <div className="md:hidden mt-3 pb-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                type="search"
-                placeholder="Search Divya Bhakti..."
-                className="pl-10 w-full bg-gray-100 border-transparent focus:bg-white focus:border-saffron-500 rounded-lg"
-              />
-            </div>
+          <div className="md:hidden mt-3 pb-1 relative" ref={mobileSearchRef}>
+            <form onSubmit={handleSearch} className="flex gap-2">
+              <div className="relative flex-1">
+                {isSearching ? (
+                  <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-saffron-500 animate-spin" />
+                ) : (
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                )}
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => handleSearchInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
+                  placeholder="Search Divya Bhakti..."
+                  className="pl-10 pr-4 py-2.5 w-full bg-gray-100 border border-transparent focus:bg-white focus:border-saffron-500 rounded-lg text-sm outline-none transition-all"
+                  aria-label="Search products"
+                  autoComplete="off"
+                />
+              </div>
+              <button
+                type="submit"
+                className="inline-flex items-center justify-center bg-saffron-500 hover:bg-saffron-600 text-white px-4 rounded-lg transition-colors"
+                aria-label="Search"
+              >
+                <Search className="h-4 w-4" />
+              </button>
+            </form>
+            <SuggestionDropdown />
           </div>
         </div>
 
         {/* Secondary Navigation - Categories Row */}
         <div className="bg-saffron-600 text-white text-sm py-2 px-4 overflow-x-auto scrollbar-hide hidden md:block">
           <div className="container mx-auto flex items-center gap-6 font-medium whitespace-nowrap">
-            <div className="flex items-center gap-1 cursor-pointer hover:text-saffron-100">
+            <Link href="/products" className="flex items-center gap-1 cursor-pointer hover:text-saffron-100">
               <Menu className="h-4 w-4" />
               All
-            </div>
+            </Link>
             {categories.map((c) => (
               <Link key={c.href} href={c.href} className="hover:text-saffron-100 hover:underline transition-colors">
                 {t(`nav.${c.nameKey}`)}

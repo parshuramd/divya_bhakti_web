@@ -264,6 +264,114 @@ export async function sendOrderConfirmationEmail(
   });
 }
 
+export async function sendAdminOrderNotification(
+  orderDetails: {
+    orderNumber: string;
+    customerName: string;
+    customerEmail: string;
+    customerPhone: string;
+    paymentMethod: string;
+    items: Array<{ name: string; quantity: number; price: number }>;
+    total: number;
+    address: string;
+  }
+): Promise<boolean> {
+  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || process.env.ADMIN_EMAIL || 'admin@divyabhaktistore.com';
+
+  const itemsHtml = orderDetails.items
+    .map(
+      (item) => `
+      <tr>
+        <td style="padding: 10px 15px; border-bottom: 1px solid #e5e5e5; font-size: 14px;">${item.name}</td>
+        <td style="padding: 10px 15px; border-bottom: 1px solid #e5e5e5; text-align: center; font-size: 14px;">${item.quantity}</td>
+        <td style="padding: 10px 15px; border-bottom: 1px solid #e5e5e5; text-align: right; font-size: 14px; font-weight: 600;">₹${item.price.toFixed(2)}</td>
+      </tr>
+    `
+    )
+    .join('');
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>New Order - ${orderDetails.orderNumber}</title>
+      </head>
+      <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f0f0;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+          <tr>
+            <td align="center" style="padding: 30px 20px;">
+              <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                <tr>
+                  <td style="padding: 30px; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); border-radius: 12px 12px 0 0; text-align: center;">
+                    <h1 style="margin: 0; color: #ffffff; font-size: 22px;">🔔 New Order Received!</h1>
+                    <p style="margin: 8px 0 0; color: rgba(255,255,255,0.9); font-size: 16px; font-weight: 700;">${orderDetails.orderNumber}</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 30px;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 20px; background-color: #fef3c7; border-radius: 8px; padding: 15px;">
+                      <tr>
+                        <td style="padding: 5px 15px;"><strong>Total Amount:</strong></td>
+                        <td style="padding: 5px 15px; text-align: right; font-size: 22px; font-weight: 700; color: #dc2626;">₹${orderDetails.total.toFixed(2)}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 5px 15px;"><strong>Payment:</strong></td>
+                        <td style="padding: 5px 15px; text-align: right; font-weight: 600;">${orderDetails.paymentMethod === 'COD' ? '💵 Cash on Delivery' : '💳 Razorpay (Paid)'}</td>
+                      </tr>
+                    </table>
+
+                    <h3 style="margin: 20px 0 10px; font-size: 15px; color: #333;">Customer Details</h3>
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f9fafb; border-radius: 8px; padding: 10px;">
+                      <tr><td style="padding: 6px 15px; color: #666; font-size: 14px;">Name:</td><td style="padding: 6px 15px; font-size: 14px; font-weight: 500;">${orderDetails.customerName}</td></tr>
+                      <tr><td style="padding: 6px 15px; color: #666; font-size: 14px;">Email:</td><td style="padding: 6px 15px; font-size: 14px;"><a href="mailto:${orderDetails.customerEmail}" style="color: #2563eb;">${orderDetails.customerEmail}</a></td></tr>
+                      <tr><td style="padding: 6px 15px; color: #666; font-size: 14px;">Phone:</td><td style="padding: 6px 15px; font-size: 14px;"><a href="tel:${orderDetails.customerPhone}" style="color: #2563eb;">${orderDetails.customerPhone}</a></td></tr>
+                    </table>
+
+                    <h3 style="margin: 20px 0 10px; font-size: 15px; color: #333;">Order Items</h3>
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border: 1px solid #e5e5e5; border-radius: 8px;">
+                      <tr style="background-color: #f9fafb;">
+                        <th style="padding: 10px 15px; text-align: left; font-size: 13px; color: #666;">Product</th>
+                        <th style="padding: 10px 15px; text-align: center; font-size: 13px; color: #666;">Qty</th>
+                        <th style="padding: 10px 15px; text-align: right; font-size: 13px; color: #666;">Total</th>
+                      </tr>
+                      ${itemsHtml}
+                    </table>
+
+                    <h3 style="margin: 20px 0 10px; font-size: 15px; color: #333;">Delivery Address</h3>
+                    <p style="margin: 0; color: #555; font-size: 14px; line-height: 1.6; background-color: #f9fafb; padding: 12px 15px; border-radius: 8px;">
+                      ${orderDetails.address}
+                    </p>
+
+                    <div style="text-align: center; margin-top: 25px;">
+                      <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/admin/orders" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 14px;">View in Admin Panel →</a>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center" style="padding: 15px; background-color: #fafafa; border-radius: 0 0 12px 12px;">
+                    <p style="margin: 0; color: #999; font-size: 12px;">Divya Bhakti Store - Admin Notification</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+  `;
+
+  const textContent = `New Order: ${orderDetails.orderNumber}\nCustomer: ${orderDetails.customerName} (${orderDetails.customerEmail})\nTotal: ₹${orderDetails.total.toFixed(2)}\nPayment: ${orderDetails.paymentMethod}\nAddress: ${orderDetails.address}`;
+
+  return sendEmail({
+    to: adminEmail,
+    subject: `🔔 New Order #${orderDetails.orderNumber} - ₹${orderDetails.total.toFixed(2)} (${orderDetails.paymentMethod})`,
+    html,
+    text: textContent,
+  });
+}
+
 export async function sendOrderStatusEmail(
   email: string,
   orderNumber: string,

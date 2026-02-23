@@ -5,6 +5,8 @@ import { getMessages, getLocale } from 'next-intl/server';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { SessionProvider } from '@/components/providers/session-provider';
 import { Toaster } from '@/components/ui/toaster';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
 
 const inter = Inter({
@@ -95,7 +97,7 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: 'your-google-verification-code',
+    google: process.env.GOOGLE_SITE_VERIFICATION || '',
   },
   category: 'ecommerce',
 };
@@ -134,6 +136,8 @@ export default async function RootLayout({
               {children}
               <FloatingActions />
               <Toaster />
+              <Analytics />
+              <SpeedInsights />
             </NextIntlClientProvider>
           </ThemeProvider>
         </SessionProvider>

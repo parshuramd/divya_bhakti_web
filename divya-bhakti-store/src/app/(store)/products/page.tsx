@@ -7,6 +7,16 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export const revalidate = 3600;
 
+function serializeProduct(product: any) {
+  return {
+    ...product,
+    price: Number(product.price),
+    compareAtPrice: product.compareAtPrice ? Number(product.compareAtPrice) : null,
+    costPrice: product.costPrice ? Number(product.costPrice) : null,
+    weight: product.weight ? Number(product.weight) : null,
+  };
+}
+
 interface ProductsPageProps {
   searchParams: {
     category?: string;
@@ -85,7 +95,7 @@ async function getProducts(searchParams: ProductsPageProps['searchParams']) {
   ]);
 
   return {
-    products,
+    products: products.map(serializeProduct),
     total,
     page,
     totalPages: Math.ceil(total / limit),

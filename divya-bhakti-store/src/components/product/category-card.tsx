@@ -18,19 +18,19 @@ interface CategoryCardProps {
 
 // Default category images for devotional products
 const defaultImages: Record<string, string> = {
-  idols: 'https://images.unsplash.com/photo-1567591414240-e9c1e001a2b7?w=400',
-  mala: 'https://images.unsplash.com/photo-1611042553365-9b101441c135?w=400',
-  incense: 'https://images.unsplash.com/photo-1600618528240-fb9fc964b853?w=400',
-  photos: 'https://images.unsplash.com/photo-1545697318-c6913e0e3ab7?w=400',
-  puja: 'https://images.unsplash.com/photo-1585997907656-a4e5ff9c5d02?w=400',
-  books: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400',
+  idols: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=400',
+  mala: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=400',
+  incense: 'https://images.unsplash.com/photo-1603006905003-be475563bc59?w=400',
+  photos: 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=400',
+  puja: 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=400',
+  books: 'https://images.unsplash.com/photo-1524578271613-d550eacf6090?w=400',
 };
 
 export function CategoryCard({ category }: CategoryCardProps) {
   const imageUrl =
     category.image ||
     defaultImages[category.slug] ||
-    'https://images.unsplash.com/photo-1532767153582-b1a0e5145009?w=400';
+    'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=400';
 
   return (
     <Link href={`/category/${category.slug}`} className="group">

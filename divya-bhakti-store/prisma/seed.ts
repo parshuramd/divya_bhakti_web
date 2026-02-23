@@ -31,7 +31,7 @@ async function main() {
         nameMarathi: 'मूर्ती',
         slug: 'idols',
         description: 'Beautiful handcrafted divine idols for your home temple',
-        image: 'https://images.unsplash.com/photo-1567591414240-e9c1e001a2b7?w=400',
+        image: 'https://images.unsplash.com/photo-1567591370504-c8c0e270b00d?w=400',
         sortOrder: 1,
       },
     }),
@@ -43,7 +43,7 @@ async function main() {
         nameMarathi: 'माळा आणि मणी',
         slug: 'mala',
         description: 'Sacred prayer beads and malas for meditation',
-        image: 'https://images.unsplash.com/photo-1611042553365-9b101441c135?w=400',
+        image: 'https://images.unsplash.com/photo-1583948738292-2baf89fd40a1?w=400',
         sortOrder: 2,
       },
     }),
@@ -55,7 +55,7 @@ async function main() {
         nameMarathi: 'धूप आणि अगरबत्ती',
         slug: 'incense',
         description: 'Premium incense sticks and dhoop for spiritual ambiance',
-        image: 'https://images.unsplash.com/photo-1600618528240-fb9fc964b853?w=400',
+        image: 'https://images.unsplash.com/photo-1603006905003-be475563bc59?w=400',
         sortOrder: 3,
       },
     }),
@@ -67,7 +67,7 @@ async function main() {
         nameMarathi: 'फोटो आणि फ्रेम्स',
         slug: 'photos',
         description: 'Divine deity photos and decorative frames',
-        image: 'https://images.unsplash.com/photo-1545697318-c6913e0e3ab7?w=400',
+        image: 'https://images.unsplash.com/photo-1524578271613-d550eacf6090?w=400',
         sortOrder: 4,
       },
     }),
@@ -79,7 +79,7 @@ async function main() {
         nameMarathi: 'पूजा साहित्य',
         slug: 'puja',
         description: 'Essential items for your daily puja rituals',
-        image: 'https://images.unsplash.com/photo-1585997907656-a4e5ff9c5d02?w=400',
+        image: 'https://images.unsplash.com/photo-1604608672516-f1b9b1d37076?w=400',
         sortOrder: 5,
       },
     }),
@@ -116,7 +116,7 @@ async function main() {
       isFeatured: true,
       tags: ['ganesha', 'brass', 'handcrafted'],
       images: [
-        { url: 'https://images.unsplash.com/photo-1567591414240-e9c1e001a2b7?w=800', isPrimary: true },
+        { url: 'https://images.unsplash.com/photo-1567591370504-c8c0e270b00d?w=800', isPrimary: true },
       ],
     },
     {
@@ -132,7 +132,7 @@ async function main() {
       isFeatured: true,
       tags: ['lakshmi', 'marble', 'prosperity'],
       images: [
-        { url: 'https://images.unsplash.com/photo-1606293926075-69a00dbfde81?w=800', isPrimary: true },
+        { url: 'https://images.unsplash.com/photo-1582650625784-23d5ee37d16f?w=800', isPrimary: true },
       ],
     },
     {
@@ -164,7 +164,7 @@ async function main() {
       isFeatured: true,
       tags: ['rudraksha', 'meditation', 'japa'],
       images: [
-        { url: 'https://images.unsplash.com/photo-1611042553365-9b101441c135?w=800', isPrimary: true },
+        { url: 'https://images.unsplash.com/photo-1583948738292-2baf89fd40a1?w=800', isPrimary: true },
       ],
     },
     {
@@ -178,7 +178,7 @@ async function main() {
       categorySlug: 'mala',
       tags: ['tulsi', 'basil', 'meditation'],
       images: [
-        { url: 'https://images.unsplash.com/photo-1590076082245-59d6f1b6e9e6?w=800', isPrimary: true },
+        { url: 'https://images.unsplash.com/photo-1600618528240-fb9fc964b853?w=800', isPrimary: true },
       ],
     },
     {
@@ -210,7 +210,7 @@ async function main() {
       isFeatured: true,
       tags: ['agarbatti', 'incense', 'fragrance'],
       images: [
-        { url: 'https://images.unsplash.com/photo-1600618528240-fb9fc964b853?w=800', isPrimary: true },
+        { url: 'https://images.unsplash.com/photo-1603006905003-be475563bc59?w=800', isPrimary: true },
       ],
     },
     {
@@ -241,7 +241,7 @@ async function main() {
       isFeatured: true,
       tags: ['puja', 'thali', 'brass'],
       images: [
-        { url: 'https://images.unsplash.com/photo-1585997907656-a4e5ff9c5d02?w=800', isPrimary: true },
+        { url: 'https://images.unsplash.com/photo-1604608672516-f1b9b1d37076?w=800', isPrimary: true },
       ],
     },
     {
@@ -255,7 +255,7 @@ async function main() {
       categorySlug: 'puja',
       tags: ['kalash', 'copper', 'ceremony'],
       images: [
-        { url: 'https://images.unsplash.com/photo-1590076082245-59d6f1b6e9e6?w=800', isPrimary: true },
+        { url: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800', isPrimary: true },
       ],
     },
     // Photos
@@ -270,7 +270,7 @@ async function main() {
       categorySlug: 'photos',
       tags: ['ganesha', 'frame', 'gold'],
       images: [
-        { url: 'https://images.unsplash.com/photo-1545697318-c6913e0e3ab7?w=800', isPrimary: true },
+        { url: 'https://images.unsplash.com/photo-1567591370504-c8c0e270b00d?w=800', isPrimary: true },
       ],
     },
     {
@@ -285,7 +285,7 @@ async function main() {
       isFeatured: true,
       tags: ['tirupati', 'balaji', 'venkateswara'],
       images: [
-        { url: 'https://images.unsplash.com/photo-1618367588411-d9a90fefa881?w=800', isPrimary: true },
+        { url: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=800', isPrimary: true },
       ],
     },
     // Books
@@ -316,7 +316,7 @@ async function main() {
       categorySlug: 'books',
       tags: ['hanuman', 'chalisa', 'prayer'],
       images: [
-        { url: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=800', isPrimary: true },
+        { url: 'https://images.unsplash.com/photo-1524578271613-d550eacf6090?w=800', isPrimary: true },
       ],
     },
   ];
@@ -378,7 +378,7 @@ async function main() {
       title: 'Free Shipping on Orders Above ₹499',
       titleMarathi: '₹४९९ वरील ऑर्डरवर मोफत शिपिंग',
       subtitle: 'Across India',
-      image: 'https://images.unsplash.com/photo-1585997907656-a4e5ff9c5d02?w=1600',
+      image: 'https://images.unsplash.com/photo-1618022325802-7e5e732d97a1?w=1600',
       link: '/products',
       position: 'HOME_SECONDARY' as const,
       sortOrder: 2,

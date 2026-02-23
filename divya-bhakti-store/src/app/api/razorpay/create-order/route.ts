@@ -166,7 +166,9 @@ export async function POST(request: NextRequest) {
       key: process.env.RAZORPAY_KEY_ID,
     });
   } catch (error) {
-    console.error('Razorpay order creation error:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Razorpay order creation error:', error);
+    }
     return NextResponse.json(
       { error: 'Failed to create order' },
       { status: 500 }

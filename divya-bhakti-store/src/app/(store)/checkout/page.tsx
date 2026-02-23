@@ -18,6 +18,7 @@ import { toast } from '@/components/ui/use-toast';
 import { useCartStore } from '@/store/cart-store';
 import { formatPrice } from '@/lib/utils';
 import { addressSchema, type AddressInput } from '@/lib/validations';
+import { CouponInput } from '@/components/cart/coupon-input';
 
 declare global {
   interface Window {
@@ -29,11 +30,15 @@ export default function CheckoutPage() {
   const t = useTranslations();
   const router = useRouter();
   const { data: session, status } = useSession();
-  const { items, getSubtotal, getDiscount, getTotal, clearCart } = useCartStore();
-  
+  const { items, coupon, getSubtotal, getDiscount, getTotal, clearCart } = useCartStore();
+
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'RAZORPAY'>('RAZORPAY');
+  const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+  const isRazorpayConfigured = razorpayKey && !razorpayKey.includes('xxxx') && razorpayKey.startsWith('rzp_');
+  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'RAZORPAY'>(isRazorpayConfigured ? 'RAZORPAY' : 'COD');
+  const [savedAddressId, setSavedAddressId] = useState<string | null>(null);
+  const [addressData, setAddressData] = useState<AddressInput | null>(null);
 
   const {
     register,
@@ -54,15 +59,18 @@ export default function CheckoutPage() {
   }, [status, router]);
 
   useEffect(() => {
-    // Load Razorpay script
+    // Only load Razorpay script if properly configured
+    if (!isRazorpayConfigured) return;
     const script = document.createElement('script');
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
     script.async = true;
     document.body.appendChild(script);
     return () => {
-      document.body.removeChild(script);
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
     };
-  }, []);
+  }, [isRazorpayConfigured]);
 
   if (status === 'loading') {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
@@ -85,11 +93,47 @@ export default function CheckoutPage() {
   const shipping = subtotal >= 499 ? 0 : 49;
   const total = getTotal() + shipping;
 
-  const handleAddressSubmit = (data: AddressInput) => {
-    setStep(2);
+  const handleAddressSubmit = async (data: AddressInput) => {
+    setIsProcessing(true);
+    try {
+      // Save address to database
+      const response = await fetch('/api/addresses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to save address');
+      }
+
+      setSavedAddressId(result.address.id);
+      setAddressData(data);
+      setStep(2);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to save address',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handlePayment = async () => {
+    if (!savedAddressId) {
+      toast({
+        title: 'Error',
+        description: 'Please enter your delivery address first',
+        variant: 'destructive',
+      });
+      setStep(1);
+      return;
+    }
+
     setIsProcessing(true);
     try {
       if (paymentMethod === 'RAZORPAY') {
@@ -102,8 +146,8 @@ export default function CheckoutPage() {
               productId: item.product.id,
               quantity: item.quantity
             })),
-            addressId: 'temp-address', // In a real app, create/select address first
-            couponCode: null, // Add coupon logic
+            addressId: savedAddressId,
+            couponCode: coupon?.code || null,
           }),
         });
 
@@ -158,15 +202,25 @@ export default function CheckoutPage() {
         rzp.open();
       } else {
         // Handle COD
-        // Implement COD logic here
-        toast({
-          title: 'Order Placed',
-          description: 'Cash on Delivery order placed successfully.',
-          variant: 'success',
+        const response = await fetch('/api/orders/cod', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            items: items.map(item => ({
+              productId: item.product.id,
+              quantity: item.quantity
+            })),
+            addressId: savedAddressId,
+            couponCode: coupon?.code || null,
+          }),
         });
+
+        const data = await response.json();
+
+        if (!response.ok) throw new Error(data.error);
+
         clearCart();
-        // Redirect to confirmation
-        // router.push(`/order-confirmation/${orderId}`);
+        router.push(`/order-confirmation/${data.orderId}`);
       }
     } catch (error) {
       toast({
@@ -188,7 +242,9 @@ export default function CheckoutPage() {
             {/* Steps Indicator */}
             <div className="flex items-center justify-between mb-8 px-4">
               <div className="flex items-center gap-2">
-                <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${step >= 1 ? 'bg-saffron-600 text-white' : 'bg-gray-200 text-gray-600'}`}>1</div>
+                <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${step >= 1 ? 'bg-saffron-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                  {step > 1 ? <Check className="h-4 w-4" /> : '1'}
+                </div>
                 <span className={step >= 1 ? 'font-medium text-gray-900' : 'text-gray-500'}>Address</span>
               </div>
               <div className="h-px flex-1 bg-gray-200 mx-4" />
@@ -219,7 +275,7 @@ export default function CheckoutPage() {
                         {errors.phone && <p className="text-sm text-red-500">{errors.phone.message}</p>}
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="addressLine1">{t('address.addressLine1')}</Label>
                       <Input id="addressLine1" {...register('addressLine1')} placeholder="Flat, House no., Building, Company, Apartment" />
@@ -271,8 +327,8 @@ export default function CheckoutPage() {
                   </form>
                 </CardContent>
                 <CardFooter>
-                  <Button type="submit" form="address-form" className="w-full bg-saffron-600 hover:bg-saffron-700">
-                    {t('common.continue')}
+                  <Button type="submit" form="address-form" className="w-full bg-saffron-600 hover:bg-saffron-700" disabled={isProcessing}>
+                    {isProcessing ? 'Saving...' : t('common.continue')}
                   </Button>
                 </CardFooter>
               </Card>
@@ -286,17 +342,51 @@ export default function CheckoutPage() {
                   <CardDescription>Select how you want to pay</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <RadioGroup defaultValue="RAZORPAY" onValueChange={(val: 'COD' | 'RAZORPAY') => setPaymentMethod(val)} className="space-y-4">
-                    <div className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors ${paymentMethod === 'RAZORPAY' ? 'border-saffron-500 bg-saffron-50' : 'hover:bg-gray-50'}`}>
-                      <div className="flex items-center space-x-3">
-                        <RadioGroupItem value="RAZORPAY" id="razorpay" />
-                        <div className="space-y-1">
-                          <Label htmlFor="razorpay" className="font-medium cursor-pointer">{t('checkout.online')}</Label>
-                          <p className="text-sm text-muted-foreground">{t('checkout.onlineDesc')}</p>
-                        </div>
+                  {/* Show saved address */}
+                  {addressData && (
+                    <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-medium text-gray-900">Delivering to:</p>
+                        <button
+                          type="button"
+                          onClick={() => setStep(1)}
+                          className="text-sm text-saffron-600 hover:underline"
+                        >
+                          Change
+                        </button>
                       </div>
-                      <CreditCard className="h-5 w-5 text-gray-500" />
+                      <p className="text-sm text-gray-600">
+                        {addressData.fullName}, {addressData.addressLine1}
+                        {addressData.addressLine2 && `, ${addressData.addressLine2}`}
+                        , {addressData.city}, {addressData.state} - {addressData.pincode}
+                      </p>
                     </div>
+                  )}
+
+                  <RadioGroup defaultValue={isRazorpayConfigured ? 'RAZORPAY' : 'COD'} onValueChange={(val: 'COD' | 'RAZORPAY') => setPaymentMethod(val)} className="space-y-4">
+                    {isRazorpayConfigured ? (
+                      <div className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors ${paymentMethod === 'RAZORPAY' ? 'border-saffron-500 bg-saffron-50' : 'hover:bg-gray-50'}`}>
+                        <div className="flex items-center space-x-3">
+                          <RadioGroupItem value="RAZORPAY" id="razorpay" />
+                          <div className="space-y-1">
+                            <Label htmlFor="razorpay" className="font-medium cursor-pointer">{t('checkout.online')}</Label>
+                            <p className="text-sm text-muted-foreground">{t('checkout.onlineDesc')}</p>
+                          </div>
+                        </div>
+                        <CreditCard className="h-5 w-5 text-gray-500" />
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between p-4 border border-dashed border-gray-300 rounded-lg bg-gray-50 opacity-60">
+                        <div className="flex items-center space-x-3">
+                          <div className="h-4 w-4 rounded-full border-2 border-gray-300" />
+                          <div className="space-y-1">
+                            <p className="font-medium text-gray-500">Online Payment (UPI, Card, Net Banking)</p>
+                            <p className="text-sm text-muted-foreground">Coming soon - Razorpay integration in progress</p>
+                          </div>
+                        </div>
+                        <CreditCard className="h-5 w-5 text-gray-300" />
+                      </div>
+                    )}
 
                     <div className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors ${paymentMethod === 'COD' ? 'border-saffron-500 bg-saffron-50' : 'hover:bg-gray-50'}`}>
                       <div className="flex items-center space-x-3">
@@ -315,7 +405,7 @@ export default function CheckoutPage() {
                     {t('common.back')}
                   </Button>
                   <Button onClick={handlePayment} disabled={isProcessing} className="flex-1 bg-saffron-600 hover:bg-saffron-700">
-                    {isProcessing ? t('common.loading') : `Pay ${formatPrice(total)}`}
+                    {isProcessing ? t('common.loading') : paymentMethod === 'COD' ? `Place Order - ${formatPrice(total)}` : `Pay ${formatPrice(total)}`}
                   </Button>
                 </CardFooter>
               </Card>
@@ -340,9 +430,13 @@ export default function CheckoutPage() {
                     </div>
                   ))}
                 </div>
-                
+
                 <Separator />
-                
+
+                <CouponInput />
+
+                <Separator />
+
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">{t('cart.subtotal')}</span>
@@ -382,4 +476,3 @@ export default function CheckoutPage() {
     </div>
   );
 }
-

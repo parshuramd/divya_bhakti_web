@@ -9,12 +9,19 @@ import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-// ... existing banner interface and data ...
+interface Banner {
+  id: string;
+  image: string;
+  title: string;
+  subtitle: string;
+  link: string;
+  linkText: string;
+}
 
 const banners: Banner[] = [
   {
     id: '1',
-    image: 'https://images.unsplash.com/photo-1609105572591-6c22d7681434?w=1600&h=800&fit=crop', // Higher res Ganesha
+    image: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=1600&h=800&fit=crop',
     title: 'Divine Ganesha Collection',
     subtitle: 'Bring home prosperity and wisdom with our handcrafted idols.',
     link: '/category/idols',
@@ -22,7 +29,7 @@ const banners: Banner[] = [
   },
   {
     id: '2',
-    image: 'https://images.unsplash.com/photo-1623357597394-434827c2f067?w=1600&h=800&fit=crop',
+    image: 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=1600&h=800&fit=crop',
     title: 'Premium Puja Essentials',
     subtitle: 'Everything you need for your daily worship rituals.',
     link: '/category/puja',
@@ -30,7 +37,7 @@ const banners: Banner[] = [
   },
   {
     id: '3',
-    image: 'https://images.unsplash.com/photo-1621506041300-4b069903cc44?w=1600&h=800&fit=crop',
+    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1600&h=800&fit=crop',
     title: 'Sacred Rudraksha & Malas',
     subtitle: 'Authentic beads for meditation and peace.',
     link: '/category/mala',
@@ -62,7 +69,7 @@ export function HeroCarousel() {
                   src={banner.image}
                   alt={banner.title}
                   fill
-                  className="object-cover opacity-90 transition-transform duration-[10000ms] ease-linear hover:scale-110"
+                  className="object-cover opacity-90 transition-transform duration-10000 ease-linear hover:scale-110"
                   priority
                 />
                 {/* Advanced Gradient Overlay */}
@@ -102,6 +109,7 @@ export function HeroCarousel() {
         size="icon"
         className="absolute left-4 top-1/2 -translate-y-1/2 h-14 w-14 rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 hidden sm:flex"
         onClick={scrollPrev}
+        aria-label="Previous slide"
       >
         <ChevronLeft className="h-8 w-8" />
       </Button>
@@ -111,6 +119,7 @@ export function HeroCarousel() {
         size="icon"
         className="absolute right-4 top-1/2 -translate-y-1/2 h-14 w-14 rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 hidden sm:flex"
         onClick={scrollNext}
+        aria-label="Next slide"
       >
         <ChevronRight className="h-8 w-8" />
       </Button>

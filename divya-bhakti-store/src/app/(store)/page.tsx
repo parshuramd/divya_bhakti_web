@@ -113,7 +113,7 @@ export default async function HomePage() {
           <div className="grid md:grid-cols-2 gap-4">
             <div className="relative h-[250px] rounded-xl overflow-hidden group cursor-pointer">
               <img 
-                src="https://images.unsplash.com/photo-1600618528240-fb9fc964b853?w=800" 
+                src="https://images.unsplash.com/photo-1603006905003-be475563bc59?w=800" 
                 alt="Incense" 
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
@@ -128,7 +128,7 @@ export default async function HomePage() {
             </div>
             <div className="relative h-[250px] rounded-xl overflow-hidden group cursor-pointer">
               <img 
-                src="https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=800" 
+                src="https://images.unsplash.com/photo-1524578271613-d550eacf6090?w=800" 
                 alt="Books" 
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />

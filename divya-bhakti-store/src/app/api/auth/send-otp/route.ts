@@ -40,19 +40,19 @@ export async function POST(request: NextRequest) {
     // Send OTP via email
     const emailSent = await sendOTPEmail(email, otp);
 
-    if (!emailSent) {
-      // For development, log the OTP
+    if (!emailSent && process.env.NODE_ENV === 'development') {
       console.log(`[DEV] OTP for ${email}: ${otp}`);
     }
 
     return NextResponse.json({
       success: true,
       message: 'OTP sent successfully',
-      // Always return OTP for testing purposes right now
-      debugOtp: otp,
+      ...(process.env.NODE_ENV === 'development' && { debugOtp: otp }),
     });
   } catch (error) {
-    console.error('Send OTP error:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Send OTP error:', error);
+    }
     return NextResponse.json(
       { error: 'Failed to send OTP' },
       { status: 500 }

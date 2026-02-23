@@ -188,7 +188,7 @@ export function ProductCard({ product, showBadge }: ProductCardProps) {
             )}
             <div className="flex items-center gap-1 bg-yellow-50 px-1.5 py-0.5 rounded text-yellow-700">
               <Star className="h-3 w-3 fill-current" />
-              <span className="text-xs font-bold">4.8</span>
+              <span className="text-xs font-bold">{product.averageRating?.toFixed(1) || '4.5'}</span>
             </div>
           </div>
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import prisma from '@/lib/prisma';
-import { sendOrderConfirmationEmail } from '@/lib/email';
+import { sendOrderConfirmationEmail, sendAdminOrderNotification } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -77,22 +77,37 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Send confirmation email
+    // Send confirmation email to customer
+    const addressStr = `${order.address.fullName}, ${order.address.addressLine1}, ${order.address.city}, ${order.address.state} - ${order.address.pincode}`;
+    const orderItemsSummary = order.items.map((item) => ({
+      name: item.name,
+      quantity: item.quantity,
+      price: Number(item.total),
+    }));
+
     if (order.user?.email) {
       await sendOrderConfirmationEmail(order.user.email, {
         orderNumber: order.orderNumber,
-        items: order.items.map((item) => ({
-          name: item.name,
-          quantity: item.quantity,
-          price: Number(item.total),
-        })),
+        items: orderItemsSummary,
         subtotal: Number(order.subtotal),
         shipping: Number(order.shippingCost),
         discount: Number(order.discount),
         total: Number(order.total),
-        address: `${order.address.fullName}, ${order.address.addressLine1}, ${order.address.city}, ${order.address.state} - ${order.address.pincode}`,
+        address: addressStr,
       });
     }
+
+    // Send notification email to admin
+    await sendAdminOrderNotification({
+      orderNumber: order.orderNumber,
+      customerName: order.address.fullName,
+      customerEmail: order.user?.email || 'N/A',
+      customerPhone: order.address.phone,
+      paymentMethod: 'RAZORPAY',
+      items: orderItemsSummary,
+      total: Number(order.total),
+      address: addressStr,
+    });
 
     return NextResponse.json({
       success: true,
@@ -101,7 +116,9 @@ export async function POST(request: NextRequest) {
       orderNumber: order.orderNumber,
     });
   } catch (error) {
-    console.error('Payment verification error:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Payment verification error:', error);
+    }
     return NextResponse.json(
       { error: 'Failed to verify payment' },
       { status: 500 }

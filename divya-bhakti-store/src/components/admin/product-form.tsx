@@ -54,10 +54,16 @@ export function ProductForm({ initialData, categories }: ProductFormProps) {
     resolver: zodResolver(productSchema),
     defaultValues: initialData
       ? {
-          ...initialData,
+          name: initialData.name,
+          description: initialData.description || '',
           price: Number(initialData.price),
           compareAtPrice: initialData.compareAtPrice ? Number(initialData.compareAtPrice) : 0,
           costPrice: initialData.costPrice ? Number(initialData.costPrice) : 0,
+          stock: initialData.stock,
+          sku: initialData.sku,
+          categoryId: initialData.categoryId,
+          isActive: initialData.isActive,
+          isFeatured: initialData.isFeatured,
           nameMarathi: initialData.nameMarathi || '',
           descriptionMarathi: initialData.descriptionMarathi || '',
           images: initialData.images.map((img) => ({ url: img.url })),
@@ -131,8 +137,22 @@ export function ProductForm({ initialData, categories }: ProductFormProps) {
               disabled={loading}
               variant="destructive"
               size="icon"
-              onClick={() => {
-                /* Add delete logic */
+              onClick={async () => {
+                if (!confirm('Are you sure you want to delete this product?')) return;
+                try {
+                  setLoading(true);
+                  const response = await fetch(`/api/products/${initialData.id}`, {
+                    method: 'DELETE',
+                  });
+                  if (!response.ok) throw new Error('Failed to delete');
+                  toast({ title: 'Product deleted successfully', variant: 'success' });
+                  router.push('/admin/products');
+                  router.refresh();
+                } catch (error) {
+                  toast({ title: 'Error', description: 'Failed to delete product.', variant: 'destructive' });
+                } finally {
+                  setLoading(false);
+                }
               }}
             >
               <Trash className="h-4 w-4" />

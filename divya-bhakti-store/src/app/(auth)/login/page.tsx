@@ -58,9 +58,8 @@ export default function LoginPage() {
         description: `OTP sent to ${data.email}`,
       });
 
-      // Show OTP in toast for development
-      if (result.debugOtp) {
-        console.log('DEBUG OTP:', result.debugOtp);
+      // Show OTP in toast for development only
+      if (process.env.NODE_ENV === 'development' && result.debugOtp) {
         toast({
           title: "Dev Mode: OTP",
           description: `Your OTP is: ${result.debugOtp}`,
