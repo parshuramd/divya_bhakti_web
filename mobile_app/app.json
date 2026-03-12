@@ -1,0 +1,57 @@
+{
+  "expo": {
+    "name": "Divya Bhakti Store",
+    "slug": "divya-bhakti-store",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FF7A00"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.divyabhakti.store",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow camera access for profile photos",
+        "NSPhotoLibraryUsageDescription": "Allow photo library access for profile photos"
+      }
+    },
+    "android": {
+      "package": "com.divyabhakti.store",
+      "adaptiveIcon": {
+        "backgroundColor": "#FF7A00",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": ["NOTIFICATIONS", "VIBRATE"],
+      "googleServicesFile": "./google-services.json"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-image",
+      "expo-secure-store",
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#FF7A00",
+          "sounds": []
+        }
+      ]
+    ],
+    "extra": {
+      "apiBaseUrl": "https://your-domain.com/api",
+      "razorpayKeyId": "rzp_test_xxxxxxxxxxxxx",
+      "eas": {
+        "projectId": "your-eas-project-id"
+      }
+    }
+  }
+}
