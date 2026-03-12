@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import prisma from '@/lib/prisma';
-import { sendOrderConfirmationEmail } from '@/lib/email';
+import { sendOrderConfirmationEmail, sendAdminOrderNotification, sendOrderStatusEmail } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,30 +37,94 @@ export async function POST(request: NextRequest) {
         const orderId = payment.notes?.orderId;
 
         if (orderId) {
-          // Check if already processed (idempotency)
           const existingOrder = await prisma.order.findUnique({
             where: { id: orderId },
+            include: { items: true, user: true },
           });
 
           if (existingOrder && existingOrder.paymentStatus === 'PAID') {
             return NextResponse.json({ status: 'already_processed' });
           }
 
-          await prisma.order.update({
-            where: { id: orderId },
-            data: {
-              paymentStatus: 'PAID',
-              status: 'CONFIRMED',
-              razorpayPaymentId: payment.id,
-              paidAt: new Date(),
-              timeline: {
-                create: {
-                  status: 'CONFIRMED',
-                  message: 'Payment captured via webhook',
+          if (!existingOrder) {
+            return NextResponse.json({ status: 'order_not_found' });
+          }
+
+          // Use transaction for atomicity
+          const order = await prisma.$transaction(async (tx) => {
+            const updatedOrder = await tx.order.update({
+              where: { id: orderId },
+              data: {
+                paymentStatus: 'PAID',
+                status: 'CONFIRMED',
+                razorpayPaymentId: payment.id,
+                paidAt: new Date(),
+                timeline: {
+                  create: {
+                    status: 'CONFIRMED',
+                    message: 'Payment captured via webhook',
+                  },
                 },
               },
-            },
+              include: {
+                items: { include: { product: true } },
+                address: true,
+                user: true,
+              },
+            });
+
+            // Decrement stock atomically
+            for (const item of updatedOrder.items) {
+              const product = await tx.product.update({
+                where: { id: item.productId },
+                data: { stock: { decrement: item.quantity } },
+              });
+              if (product.stock < 0) {
+                throw new Error(`Insufficient stock for: ${item.name}`);
+              }
+            }
+
+            // Update coupon usage
+            if (updatedOrder.couponId) {
+              await tx.coupon.update({
+                where: { id: updatedOrder.couponId },
+                data: { usedCount: { increment: 1 } },
+              });
+            }
+
+            return updatedOrder;
           });
+
+          // Send emails (non-blocking)
+          const addressStr = `${order.address.fullName}, ${order.address.addressLine1}, ${order.address.city}, ${order.address.state} - ${order.address.pincode}`;
+          const orderItemsSummary = order.items.map((item) => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: Number(item.total),
+          }));
+
+          if (order.user?.email) {
+            sendOrderConfirmationEmail(order.user.email, {
+              orderNumber: order.orderNumber,
+              items: orderItemsSummary,
+              subtotal: Number(order.subtotal),
+              shipping: Number(order.shippingCost),
+              discount: Number(order.discount),
+              total: Number(order.total),
+              address: addressStr,
+            }).catch(() => {});
+          }
+
+          sendAdminOrderNotification({
+            orderNumber: order.orderNumber,
+            customerName: order.address.fullName,
+            customerEmail: order.user?.email || 'N/A',
+            customerPhone: order.address.phone,
+            paymentMethod: 'RAZORPAY',
+            items: orderItemsSummary,
+            total: Number(order.total),
+            address: addressStr,
+          }).catch(() => {});
         }
         break;
       }
@@ -70,19 +134,41 @@ export async function POST(request: NextRequest) {
         const orderId = payment.notes?.orderId;
 
         if (orderId) {
-          await prisma.order.update({
+          const existingOrder = await prisma.order.findUnique({
             where: { id: orderId },
-            data: {
-              paymentStatus: 'FAILED',
-              status: 'CANCELLED',
-              timeline: {
-                create: {
-                  status: 'CANCELLED',
-                  message: `Payment failed: ${payment.error_description || 'Unknown error'}`,
+          });
+
+          if (existingOrder && existingOrder.paymentStatus !== 'PAID') {
+            await prisma.order.update({
+              where: { id: orderId },
+              data: {
+                paymentStatus: 'FAILED',
+                status: 'CANCELLED',
+                timeline: {
+                  create: {
+                    status: 'CANCELLED',
+                    message: `Payment failed: ${payment.error_description || 'Unknown error'}`,
+                  },
                 },
               },
-            },
-          });
+              include: { user: true },
+            });
+
+            // Notify customer about failure
+            if (existingOrder) {
+              const orderWithUser = await prisma.order.findUnique({
+                where: { id: orderId },
+                include: { user: true },
+              });
+              if (orderWithUser?.user?.email) {
+                sendOrderStatusEmail(
+                  orderWithUser.user.email,
+                  orderWithUser.orderNumber,
+                  'CANCELLED'
+                ).catch(() => {});
+              }
+            }
+          }
         }
         break;
       }
@@ -93,6 +179,7 @@ export async function POST(request: NextRequest) {
 
         const order = await prisma.order.findFirst({
           where: { razorpayPaymentId: paymentId },
+          include: { user: true },
         });
 
         if (order) {
@@ -109,12 +196,19 @@ export async function POST(request: NextRequest) {
               },
             },
           });
+
+          if (order.user?.email) {
+            sendOrderStatusEmail(
+              order.user.email,
+              order.orderNumber,
+              'REFUNDED'
+            ).catch(() => {});
+          }
         }
         break;
       }
 
       default:
-        // Unhandled event type - acknowledge receipt
         break;
     }
 

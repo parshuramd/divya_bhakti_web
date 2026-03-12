@@ -16,7 +16,7 @@ export async function GET() {
 
         return NextResponse.json({ banners });
     } catch (error) {
-        console.error('Error fetching banners:', error);
+        if (process.env.NODE_ENV === 'development') console.error('Error fetching banners:', error);
         return NextResponse.json({ error: 'Failed to fetch banners' }, { status: 500 });
     }
 }
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({ banner }, { status: 201 });
     } catch (error) {
-        console.error('Error creating banner:', error);
+        if (process.env.NODE_ENV === 'development') console.error('Error creating banner:', error);
         return NextResponse.json({ error: 'Failed to create banner' }, { status: 500 });
     }
 }
@@ -72,7 +72,7 @@ export async function PUT(request: NextRequest) {
 
         return NextResponse.json({ banner });
     } catch (error) {
-        console.error('Error updating banner:', error);
+        if (process.env.NODE_ENV === 'development') console.error('Error updating banner:', error);
         return NextResponse.json({ error: 'Failed to update banner' }, { status: 500 });
     }
 }
@@ -95,7 +95,7 @@ export async function DELETE(request: NextRequest) {
 
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error('Error deleting banner:', error);
+        if (process.env.NODE_ENV === 'development') console.error('Error deleting banner:', error);
         return NextResponse.json({ error: 'Failed to delete banner' }, { status: 500 });
     }
 }

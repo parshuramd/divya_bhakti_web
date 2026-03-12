@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Mail, Phone, MapPin, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ContactForm } from './contact-form';
 
 export const metadata: Metadata = {
   title: 'Contact Us',
@@ -91,54 +92,7 @@ export default function ContactPage() {
               <CardTitle>Send us a Message</CardTitle>
             </CardHeader>
             <CardContent>
-              <form className="space-y-4">
-                <div className="space-y-2">
-                  <label htmlFor="name" className="text-sm font-medium">Name</label>
-                  <input
-                    id="name"
-                    type="text"
-                    placeholder="Your name"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="email" className="text-sm font-medium">Email</label>
-                  <input
-                    id="email"
-                    type="email"
-                    placeholder="your@email.com"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="subject" className="text-sm font-medium">Subject</label>
-                  <input
-                    id="subject"
-                    type="text"
-                    placeholder="How can we help?"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="message" className="text-sm font-medium">Message</label>
-                  <textarea
-                    id="message"
-                    placeholder="Your message..."
-                    rows={5}
-                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[120px]"
-                    required
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="w-full bg-saffron-600 hover:bg-saffron-700 text-white font-medium py-2.5 rounded-md transition-colors"
-                >
-                  Send Message
-                </button>
-              </form>
+              <ContactForm />
             </CardContent>
           </Card>
         </div>

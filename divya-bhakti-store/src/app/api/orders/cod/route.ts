@@ -25,151 +25,152 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate items and calculate total
-    const productIds = items.map((item: { productId: string }) => item.productId);
-    const products = await prisma.product.findMany({
-      where: { id: { in: productIds } },
+    // Verify address belongs to user
+    const address = await prisma.address.findFirst({
+      where: { id: addressId, userId: session.user.id },
     });
 
-    let subtotal = 0;
-    const orderItems = [];
-
-    for (const item of items) {
-      const product = products.find((p) => p.id === item.productId);
-      if (!product) {
-        return NextResponse.json(
-          { error: `Product not found: ${item.productId}` },
-          { status: 400 }
-        );
-      }
-
-      if (product.stock < item.quantity) {
-        return NextResponse.json(
-          { error: `Insufficient stock for: ${product.name}` },
-          { status: 400 }
-        );
-      }
-
-      const itemTotal = Number(product.price) * item.quantity;
-      subtotal += itemTotal;
-
-      orderItems.push({
-        productId: product.id,
-        name: product.name,
-        sku: product.sku,
-        price: product.price,
-        quantity: item.quantity,
-        total: itemTotal,
-      });
+    if (!address) {
+      return NextResponse.json(
+        { error: 'Invalid address' },
+        { status: 400 }
+      );
     }
 
-    // Apply coupon if provided
-    let discount = 0;
-    let coupon = null;
-
-    if (couponCode) {
-      coupon = await prisma.coupon.findFirst({
-        where: {
-          code: couponCode.toUpperCase(),
-          isActive: true,
-          OR: [
-            { startsAt: null },
-            { startsAt: { lte: new Date() } },
-          ],
-          AND: [
-            {
-              OR: [
-                { expiresAt: null },
-                { expiresAt: { gte: new Date() } },
-              ],
-            },
-          ],
-        },
+    // Use a transaction for the entire order creation + stock decrement
+    const order = await prisma.$transaction(async (tx) => {
+      // Validate items and calculate total
+      const productIds = items.map((item: { productId: string }) => item.productId);
+      const products = await tx.product.findMany({
+        where: { id: { in: productIds }, isActive: true },
       });
 
-      if (coupon) {
-        if (coupon.minOrderAmount && subtotal < Number(coupon.minOrderAmount)) {
-          return NextResponse.json(
-            { error: `Minimum order amount is ₹${coupon.minOrderAmount}` },
-            { status: 400 }
-          );
+      let subtotal = 0;
+      const orderItems = [];
+
+      for (const item of items) {
+        const product = products.find((p) => p.id === item.productId);
+        if (!product) {
+          throw new Error(`Product not found: ${item.productId}`);
         }
 
-        if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) {
-          return NextResponse.json(
-            { error: 'Coupon usage limit exceeded' },
-            { status: 400 }
-          );
+        if (product.stock < item.quantity) {
+          throw new Error(`Insufficient stock for: ${product.name}`);
         }
 
-        if (coupon.discountType === 'PERCENTAGE') {
-          discount = (subtotal * Number(coupon.discountValue)) / 100;
-          if (coupon.maxDiscount && discount > Number(coupon.maxDiscount)) {
-            discount = Number(coupon.maxDiscount);
+        const itemTotal = Number(product.price) * item.quantity;
+        subtotal += itemTotal;
+
+        orderItems.push({
+          productId: product.id,
+          name: product.name,
+          sku: product.sku,
+          price: product.price,
+          quantity: item.quantity,
+          total: itemTotal,
+        });
+      }
+
+      // Apply coupon if provided
+      let discount = 0;
+      let coupon = null;
+
+      if (couponCode) {
+        coupon = await tx.coupon.findFirst({
+          where: {
+            code: couponCode.toUpperCase(),
+            isActive: true,
+            OR: [
+              { startsAt: null },
+              { startsAt: { lte: new Date() } },
+            ],
+            AND: [
+              {
+                OR: [
+                  { expiresAt: null },
+                  { expiresAt: { gte: new Date() } },
+                ],
+              },
+            ],
+          },
+        });
+
+        if (coupon) {
+          if (coupon.minOrderAmount && subtotal < Number(coupon.minOrderAmount)) {
+            throw new Error(`Minimum order amount is ₹${coupon.minOrderAmount}`);
           }
-        } else {
-          discount = Number(coupon.discountValue);
+
+          if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) {
+            throw new Error('Coupon usage limit exceeded');
+          }
+
+          if (coupon.discountType === 'PERCENTAGE') {
+            discount = (subtotal * Number(coupon.discountValue)) / 100;
+            if (coupon.maxDiscount && discount > Number(coupon.maxDiscount)) {
+              discount = Number(coupon.maxDiscount);
+            }
+          } else {
+            discount = Number(coupon.discountValue);
+          }
         }
       }
-    }
 
-    // Calculate shipping (free above ₹499)
-    const shippingCost = subtotal >= 499 ? 0 : 49;
-    const total = Math.max(0, subtotal - discount + shippingCost);
+      const shippingCost = subtotal >= 499 ? 0 : 49;
+      const total = Math.max(0, subtotal - discount + shippingCost);
 
-    // Create order in database
-    const order = await prisma.order.create({
-      data: {
-        orderNumber: generateOrderNumber(),
-        userId: session.user.id,
-        addressId,
-        status: 'CONFIRMED',
-        paymentMethod: 'COD',
-        paymentStatus: 'PENDING',
-        subtotal,
-        shippingCost,
-        discount,
-        total,
-        couponId: coupon?.id,
-        notes,
-        items: {
-          create: orderItems,
-        },
-        timeline: {
-          create: {
-            status: 'CONFIRMED',
-            message: 'Order placed with Cash on Delivery',
+      // Create order
+      const createdOrder = await tx.order.create({
+        data: {
+          orderNumber: generateOrderNumber(),
+          userId: session.user.id,
+          addressId,
+          status: 'CONFIRMED',
+          paymentMethod: 'COD',
+          paymentStatus: 'PENDING',
+          subtotal,
+          shippingCost,
+          discount,
+          total,
+          couponId: coupon?.id,
+          notes,
+          items: { create: orderItems },
+          timeline: {
+            create: {
+              status: 'CONFIRMED',
+              message: 'Order placed with Cash on Delivery',
+            },
           },
         },
-      },
-      include: {
-        items: {
-          include: { product: true },
+        include: {
+          items: { include: { product: true } },
+          address: true,
+          user: true,
         },
-        address: true,
-        user: true,
-      },
+      });
+
+      // Atomically decrement stock with guard
+      for (const item of createdOrder.items) {
+        const product = await tx.product.update({
+          where: { id: item.productId },
+          data: { stock: { decrement: item.quantity } },
+        });
+        if (product.stock < 0) {
+          throw new Error(`Insufficient stock for: ${item.name}`);
+        }
+      }
+
+      // Update coupon usage
+      if (createdOrder.couponId) {
+        await tx.coupon.update({
+          where: { id: createdOrder.couponId },
+          data: { usedCount: { increment: 1 } },
+        });
+      }
+
+      return createdOrder;
     });
 
-    // Decrement stock
-    for (const item of order.items) {
-      await prisma.product.update({
-        where: { id: item.productId },
-        data: {
-          stock: { decrement: item.quantity },
-        },
-      });
-    }
-
-    // Update coupon usage
-    if (order.couponId) {
-      await prisma.coupon.update({
-        where: { id: order.couponId },
-        data: { usedCount: { increment: 1 } },
-      });
-    }
-
-    // Send confirmation email to customer
+    // Send emails outside transaction (non-blocking)
     const addressStr = `${order.address.fullName}, ${order.address.addressLine1}, ${order.address.city}, ${order.address.state} - ${order.address.pincode}`;
     const orderItemsSummary = order.items.map((item) => ({
       name: item.name,
@@ -178,7 +179,7 @@ export async function POST(request: NextRequest) {
     }));
 
     if (order.user?.email) {
-      await sendOrderConfirmationEmail(order.user.email, {
+      sendOrderConfirmationEmail(order.user.email, {
         orderNumber: order.orderNumber,
         items: orderItemsSummary,
         subtotal: Number(order.subtotal),
@@ -186,11 +187,10 @@ export async function POST(request: NextRequest) {
         discount: Number(order.discount),
         total: Number(order.total),
         address: addressStr,
-      });
+      }).catch(() => {});
     }
 
-    // Send notification email to admin
-    await sendAdminOrderNotification({
+    sendAdminOrderNotification({
       orderNumber: order.orderNumber,
       customerName: order.address.fullName,
       customerEmail: order.user?.email || 'N/A',
@@ -199,7 +199,7 @@ export async function POST(request: NextRequest) {
       items: orderItemsSummary,
       total: Number(order.total),
       address: addressStr,
-    });
+    }).catch(() => {});
 
     return NextResponse.json({
       success: true,
@@ -207,12 +207,7 @@ export async function POST(request: NextRequest) {
       orderNumber: order.orderNumber,
     });
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('COD order creation error:', error);
-    }
-    return NextResponse.json(
-      { error: 'Failed to create order' },
-      { status: 500 }
-    );
+    const message = error instanceof Error ? error.message : 'Failed to create order';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

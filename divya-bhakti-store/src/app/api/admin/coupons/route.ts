@@ -23,7 +23,7 @@ export async function GET() {
 
         return NextResponse.json({ coupons: serialized });
     } catch (error) {
-        console.error('Error fetching coupons:', error);
+        if (process.env.NODE_ENV === 'development') console.error('Error fetching coupons:', error);
         return NextResponse.json({ error: 'Failed to fetch coupons' }, { status: 500 });
     }
 }
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({ coupon }, { status: 201 });
     } catch (error) {
-        console.error('Error creating coupon:', error);
+        if (process.env.NODE_ENV === 'development') console.error('Error creating coupon:', error);
         return NextResponse.json({ error: 'Failed to create coupon' }, { status: 500 });
     }
 }
@@ -85,7 +85,7 @@ export async function PUT(request: NextRequest) {
 
         return NextResponse.json({ coupon });
     } catch (error) {
-        console.error('Error updating coupon:', error);
+        if (process.env.NODE_ENV === 'development') console.error('Error updating coupon:', error);
         return NextResponse.json({ error: 'Failed to update coupon' }, { status: 500 });
     }
 }
@@ -108,7 +108,7 @@ export async function DELETE(request: NextRequest) {
 
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error('Error deleting coupon:', error);
+        if (process.env.NODE_ENV === 'development') console.error('Error deleting coupon:', error);
         return NextResponse.json({ error: 'Failed to delete coupon' }, { status: 500 });
     }
 }

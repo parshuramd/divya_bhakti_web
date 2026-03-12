@@ -52,10 +52,10 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
       return true;
     }
 
-    console.error('No email provider configured');
+    if (process.env.NODE_ENV === 'development') console.error('No email provider configured');
     return false;
   } catch (error) {
-    console.error('Failed to send email:', error);
+    if (process.env.NODE_ENV === 'development') console.error('Failed to send email:', error);
     return false;
   }
 }

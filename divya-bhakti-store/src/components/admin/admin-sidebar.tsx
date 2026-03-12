@@ -13,6 +13,7 @@ import {
   FileText,
   Settings,
   Megaphone,
+  Star,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -23,6 +24,7 @@ const navigation = [
   { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
   { name: 'Customers', href: '/admin/customers', icon: Users },
   { name: 'Coupons', href: '/admin/coupons', icon: Ticket },
+  { name: 'Reviews', href: '/admin/reviews', icon: Star },
   { name: 'Banners', href: '/admin/banners', icon: Image },
   { name: 'Pages', href: '/admin/pages', icon: FileText },
   { name: 'Announcements', href: '/admin/announcements', icon: Megaphone },

@@ -10,7 +10,7 @@ export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as NextAuthOptions['adapter'],
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 7 * 24 * 60 * 60, // 7 days
   },
   pages: {
     signIn: '/login',
@@ -144,13 +144,7 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-  events: {
-    async signIn({ user }) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`User signed in: ${user.email}`);
-      }
-    },
-  },
+  events: {},
 };
 
 export async function getSession() {

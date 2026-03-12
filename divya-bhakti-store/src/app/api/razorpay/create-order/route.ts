@@ -23,6 +23,25 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { addressId, items, couponCode, notes } = body;
 
+    if (!addressId || !items?.length) {
+      return NextResponse.json(
+        { error: 'Address and items are required' },
+        { status: 400 }
+      );
+    }
+
+    // Verify address belongs to user
+    const address = await prisma.address.findFirst({
+      where: { id: addressId, userId: session.user.id },
+    });
+
+    if (!address) {
+      return NextResponse.json(
+        { error: 'Invalid address' },
+        { status: 400 }
+      );
+    }
+
     // Validate items and calculate total
     const productIds = items.map((item: { productId: string }) => item.productId);
     const products = await prisma.product.findMany({

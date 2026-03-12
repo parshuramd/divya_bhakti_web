@@ -40,7 +40,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useCartStore } from '@/store/cart-store';
+import { useCartStore, useWishlistStore, useRecentlyViewedStore } from '@/store/cart-store';
 import { cn, getInitials } from '@/lib/utils';
 import { CartDrawer } from '@/components/cart/cart-drawer';
 import { LanguageSwitcher } from '@/components/common/language-switcher';
@@ -341,7 +341,12 @@ export function Header() {
                       <DropdownMenuItem asChild><Link href="/orders">Orders</Link></DropdownMenuItem>
                       <DropdownMenuItem asChild><Link href="/wishlist">Wishlist</Link></DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => signOut()}>Sign Out</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => {
+                        useCartStore.getState().clearCart();
+                        useWishlistStore.getState().clearWishlist();
+                        useRecentlyViewedStore.getState().clearItems();
+                        signOut();
+                      }}>Sign Out</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 ) : (

@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
             },
         });
     } catch (error) {
-        console.error('Error applying coupon:', error);
+        if (process.env.NODE_ENV === 'development') console.error('Error applying coupon:', error);
         return NextResponse.json(
             { error: 'Failed to apply coupon' },
             { status: 500 }

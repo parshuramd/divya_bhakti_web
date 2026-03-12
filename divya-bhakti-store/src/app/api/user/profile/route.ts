@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { profileSchema } from '@/lib/validations';
 
 export async function GET() {
   try {
@@ -47,7 +48,16 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, phone } = body;
+    const parsed = profileSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Invalid data', details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { name, phone } = parsed.data;
 
     const updateData: Record<string, string> = {};
     if (name !== undefined) updateData.name = name;

@@ -59,11 +59,18 @@ export default function CheckoutPage() {
   }, [status, router]);
 
   useEffect(() => {
-    // Only load Razorpay script if properly configured
     if (!isRazorpayConfigured) return;
     const script = document.createElement('script');
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
     script.async = true;
+    script.onerror = () => {
+      toast({
+        title: 'Payment Error',
+        description: 'Failed to load payment gateway. Please try again or use Cash on Delivery.',
+        variant: 'destructive',
+      });
+      setPaymentMethod('COD');
+    };
     document.body.appendChild(script);
     return () => {
       if (document.body.contains(script)) {
@@ -193,12 +200,39 @@ export default function CheckoutPage() {
             name: session?.user?.name,
             email: session?.user?.email,
           },
+          modal: {
+            ondismiss: function () {
+              setIsProcessing(false);
+              toast({
+                title: 'Payment Cancelled',
+                description: 'You can retry the payment or choose Cash on Delivery.',
+              });
+            },
+          },
           theme: {
             color: '#f97316',
           },
         };
 
+        if (!window.Razorpay) {
+          toast({
+            title: 'Payment Error',
+            description: 'Payment gateway not loaded. Please refresh and try again.',
+            variant: 'destructive',
+          });
+          setIsProcessing(false);
+          return;
+        }
+
         const rzp = new window.Razorpay(options);
+        rzp.on('payment.failed', function (response: any) {
+          toast({
+            title: 'Payment Failed',
+            description: response.error?.description || 'Payment could not be processed. Please try again.',
+            variant: 'destructive',
+          });
+          setIsProcessing(false);
+        });
         rzp.open();
       } else {
         // Handle COD

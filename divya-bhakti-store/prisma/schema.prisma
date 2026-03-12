@@ -218,6 +218,7 @@ model WishlistItem {
   createdAt DateTime @default(now())
 
   @@unique([userId, productId])
+  @@index([userId])
   @@map("wishlist_items")
 }
 
@@ -232,6 +233,7 @@ model CartItem {
   updatedAt DateTime @updatedAt
 
   @@unique([userId, productId])
+  @@index([userId])
   @@map("cart_items")
 }
 
@@ -241,9 +243,9 @@ model Order {
   id              String      @id @default(cuid())
   orderNumber     String      @unique
   userId          String
-  user            User        @relation(fields: [userId], references: [id])
+  user            User        @relation(fields: [userId], references: [id], onDelete: Restrict)
   addressId       String
-  address         Address     @relation(fields: [addressId], references: [id])
+  address         Address     @relation(fields: [addressId], references: [id], onDelete: Restrict)
   status          OrderStatus @default(PENDING)
   paymentMethod   PaymentMethod
   paymentStatus   PaymentStatus @default(PENDING)
@@ -265,6 +267,10 @@ model Order {
   shiprocketShipmentId String?
   awbNumber           String?
   trackingUrl         String?
+
+  // Cancellation / Refund
+  cancellationReason  String?
+  refundAmount        Decimal?    @db.Decimal(10, 2)
   
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
@@ -277,6 +283,8 @@ model Order {
 
   @@index([userId])
   @@index([status])
+  @@index([paymentStatus])
+  @@index([createdAt])
   @@map("orders")
 }
 
@@ -285,7 +293,7 @@ model OrderItem {
   orderId   String
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productId String
-  product   Product @relation(fields: [productId], references: [id])
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
   name      String
   sku       String
   price     Decimal @db.Decimal(10, 2)
@@ -379,6 +387,8 @@ model Review {
   updatedAt DateTime @updatedAt
 
   @@unique([userId, productId])
+  @@index([productId])
+  @@index([userId])
   @@map("reviews")
 }
 
@@ -479,5 +489,16 @@ model ContactMessage {
   createdAt DateTime @default(now())
 
   @@map("contact_messages")
+}
+
+// ============= Newsletter Models =============
+
+model Subscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@map("subscribers")
 }
 

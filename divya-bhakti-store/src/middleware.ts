@@ -39,9 +39,14 @@ export async function middleware(request: NextRequest) {
   // Rate limiting for sensitive API endpoints
   if (
     pathname.startsWith('/api/auth/send-otp') ||
-    pathname.startsWith('/api/razorpay/')
+    pathname.startsWith('/api/razorpay/') ||
+    pathname.startsWith('/api/reviews') ||
+    pathname.startsWith('/api/orders/') ||
+    pathname.startsWith('/api/addresses') ||
+    pathname.startsWith('/api/user/')
   ) {
-    const allowed = rateLimit(ip, 10, 60000); // 10 requests per minute
+    const limit = pathname.startsWith('/api/auth/send-otp') ? 5 : 30;
+    const allowed = rateLimit(ip, limit, 60000);
     if (!allowed) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
@@ -91,5 +96,9 @@ export const config = {
     '/checkout',
     '/api/auth/send-otp',
     '/api/razorpay/:path*',
+    '/api/reviews/:path*',
+    '/api/orders/:path*',
+    '/api/addresses/:path*',
+    '/api/user/:path*',
   ],
 };

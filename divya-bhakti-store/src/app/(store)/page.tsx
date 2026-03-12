@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { getTranslations } from 'next-intl/server';
 import { ArrowRight, Truck, Shield, RefreshCw, HeartHandshake } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -62,8 +63,51 @@ export default async function HomePage() {
     getCategoryProducts('mala'),
   ]);
 
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://divyabhaktistore.com';
+
+  const organizationSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'Divya Bhakti Store',
+    url: appUrl,
+    logo: `${appUrl}/logo.png`,
+    description: 'Your trusted destination for authentic devotional products.',
+    contactPoint: {
+      '@type': 'ContactPoint',
+      telephone: process.env.NEXT_PUBLIC_SUPPORT_PHONE || '+919876543210',
+      contactType: 'customer service',
+      availableLanguage: ['English', 'Marathi'],
+    },
+    sameAs: [
+      process.env.NEXT_PUBLIC_FACEBOOK_URL,
+      process.env.NEXT_PUBLIC_INSTAGRAM_URL,
+      process.env.NEXT_PUBLIC_TWITTER_URL,
+      process.env.NEXT_PUBLIC_YOUTUBE_URL,
+    ].filter(Boolean),
+  };
+
+  const websiteSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'Divya Bhakti Store',
+    url: appUrl,
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: `${appUrl}/search?q={search_term_string}`,
+      'query-input': 'required name=search_term_string',
+    },
+  };
+
   return (
     <div className="bg-gray-50 min-h-screen pb-10">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+      />
       {/* 1. Hero Carousel (Amazon Style) */}
       <HeroCarousel />
 
@@ -111,11 +155,13 @@ export default async function HomePage() {
 
         <div className="container mx-auto px-4 py-8">
           <div className="grid md:grid-cols-2 gap-4">
-            <div className="relative h-[250px] rounded-xl overflow-hidden group cursor-pointer">
-              <img 
+            <Link href="/category/incense" className="relative h-[250px] rounded-xl overflow-hidden group cursor-pointer block">
+              <Image 
                 src="https://images.unsplash.com/photo-1603006905003-be475563bc59?w=800" 
-                alt="Incense" 
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                alt="Premium Incense collection"
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors" />
               <div className="absolute inset-0 flex flex-col justify-center p-8 text-white">
@@ -125,12 +171,14 @@ export default async function HomePage() {
                   Explore
                 </Button>
               </div>
-            </div>
-            <div className="relative h-[250px] rounded-xl overflow-hidden group cursor-pointer">
-              <img 
+            </Link>
+            <Link href="/category/books" className="relative h-[250px] rounded-xl overflow-hidden group cursor-pointer block">
+              <Image 
                 src="https://images.unsplash.com/photo-1524578271613-d550eacf6090?w=800" 
-                alt="Books" 
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                alt="Spiritual Books collection"
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors" />
               <div className="absolute inset-0 flex flex-col justify-center p-8 text-white">
@@ -140,7 +188,7 @@ export default async function HomePage() {
                   Read Now
                 </Button>
               </div>
-            </div>
+            </Link>
           </div>
         </div>
 
